@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, CopyIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Textarea } from "./ui/textarea";
+import { API_URL } from "@/lib/api";
 
 interface WeatherFormData {
   date: string;
@@ -68,6 +69,7 @@ export function WeatherForm() {
     message: string;
     id?: string;
   } | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -110,7 +112,7 @@ export function WeatherForm() {
     setResult(null);
 
     try {
-      const response = await fetch("http://localhost:8000/weather", {
+      const response = await fetch(`${API_URL}/weather`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -125,6 +127,10 @@ export function WeatherForm() {
           message: "Weather request submitted successfully!",
           id: data.id,
         });
+        
+        // Trigger refresh of submissions list
+        window.dispatchEvent(new Event('weatherSubmitted'));
+        
         // Reset form after successful submission
         const today = new Date();
         setSelectedDate(today);
@@ -148,6 +154,18 @@ export function WeatherForm() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCopyId = async () => {
+    if (result?.id) {
+      try {
+        await navigator.clipboard.writeText(result.id);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (error) {
+        console.error('Failed to copy:', error);
+      }
     }
   };
 
@@ -249,12 +267,24 @@ export function WeatherForm() {
             >
               <p className="text-sm font-medium">{result.message}</p>
               {result.success && result.id && (
-                <p className="text-xs mt-1">
-                  Your weather request ID:{" "}
-                  <code className="bg-green-500/20 text-green-400 px-1 rounded">
-                    {result.id}
-                  </code>
-                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <p className="text-xs">
+                    Your weather request ID:{" "}
+                    <code className="bg-green-500/20 text-green-400 px-1 rounded">
+                      {result.id}
+                    </code>
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopyId}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <CopyIcon className="size-3" />
+                    {copySuccess ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
               )}
             </div>
           )}
