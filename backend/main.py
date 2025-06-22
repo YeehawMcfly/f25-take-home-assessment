@@ -3,6 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import uvicorn
+import requests
+import uuid
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(title="Weather Data System", version="1.0.0")
 
@@ -28,13 +35,56 @@ class WeatherResponse(BaseModel):
 @app.post("/weather", response_model=WeatherResponse)
 async def create_weather_request(request: WeatherRequest):
     """
-    You need to implement this endpoint to handle the following:
+    Handle weather request submission:
     1. Receive form data (date, location, notes)
-    2. Calls WeatherStack API for the location
-    3. Stores combined data with unique ID in memory
-    4. Returns the ID to frontend
+    2. Call WeatherStack API for the location
+    3. Store combined data with unique ID in memory
+    4. Return the ID to frontend
     """
-    pass
+    # Check if API key exists
+    api_key = os.getenv("WEATHERSTACK_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="WeatherStack API key not configured")
+    
+    # Generate unique ID
+    weather_id = uuid.uuid4().hex
+    
+    try:
+        # Call WeatherStack API
+        response = requests.get(
+            "http://api.weatherstack.com/current",
+            params={
+                "access_key": api_key,
+                "query": request.location
+            },
+            timeout=10
+        )
+        response.raise_for_status()
+        weather_data = response.json()
+        
+        # Check for API errors
+        if "error" in weather_data:
+            error_info = weather_data["error"]
+            raise HTTPException(
+                status_code=400, 
+                detail=f"WeatherStack API error: {error_info.get('info', 'Invalid request')}"
+            )
+        
+        # Store the combined data
+        weather_storage[weather_id] = {
+            "id": weather_id,
+            "date": request.date,
+            "location": request.location,
+            "notes": request.notes,
+            "weather_data": weather_data
+        }
+        
+        return WeatherResponse(id=weather_id)
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch weather data: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/weather/{weather_id}")
 async def get_weather_data(weather_id: str):
