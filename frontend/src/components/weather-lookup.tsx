@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { API_URL } from "@/lib/api";
 
 // TODO: maybe move this to a types file later
 interface WeatherApiResponse {
@@ -49,7 +50,7 @@ export function WeatherLookup() {
     setData(null);
 
     try {
-      const res = await fetch(`http://localhost:8000/weather/${weatherId.trim()}`);
+      const res = await fetch(`${API_URL}/weather/${weatherId.trim()}`);
       
       if (res.ok) {
         const weatherInfo = await res.json();
@@ -163,7 +164,7 @@ export function WeatherLookup() {
                   {data.notes && data.notes.trim() && (
                     <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                       <span className="text-sm font-medium">Notes:</span>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-muted-foreground mt-1 break-words">
                         {data.notes}
                       </p>
                     </div>

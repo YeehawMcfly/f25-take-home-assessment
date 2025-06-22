@@ -7,6 +7,7 @@ import requests
 import uuid
 import os
 from dotenv import load_dotenv
+import json
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +25,18 @@ app.add_middleware(
 # In-memory storage for weather data
 weather_storage: Dict[str, Dict[str, Any]] = {}
 
+DATA_FILE = "weather_data.json"
+
+try:
+    with open(DATA_FILE, "r") as f:
+        weather_storage = json.load(f)
+except:
+    weather_storage = {}
+
+def save_data():
+    with open(DATA_FILE, "w") as f:
+        json.dump(weather_storage, f, indent=2)
+
 class WeatherRequest(BaseModel):
     date: str
     location: str
@@ -31,6 +44,10 @@ class WeatherRequest(BaseModel):
 
 class WeatherResponse(BaseModel):
     id: str
+
+@app.get("/weather_records")
+def get_weather_records():
+    return list(weather_storage.values())
 
 @app.post("/weather", response_model=WeatherResponse)
 async def create_weather_request(request: WeatherRequest):
@@ -78,7 +95,7 @@ async def create_weather_request(request: WeatherRequest):
             "notes": request.notes,
             "weather_data": weather_data
         }
-        
+        save_data()
         return WeatherResponse(id=weather_id)
         
     except requests.RequestException as e:

@@ -1,5 +1,6 @@
 import { WeatherForm } from "@/components/weather-form";
 import { WeatherLookup } from "@/components/weather-lookup";
+import { WeatherSubmissions } from "@/components/weather-submissions";
 
 export default function Home() {
   return (
@@ -28,6 +29,12 @@ export default function Home() {
             <h2 className="text-2xl font-semibold mb-4">Lookup Weather Data</h2>
             <WeatherLookup />
           </div>
+        </div>
+
+        {/* Weather Submissions Section */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-semibold mb-4">Weather Submissions</h2>
+          <WeatherSubmissions />
         </div>
       </div>
     </div>
